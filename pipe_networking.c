@@ -29,9 +29,11 @@ int server_setup() {
   returns the file descriptor for the upstream pipe (see server setup).
   =========================*/
 int server_handshake(int *to_client) {
-  int from_client;
-  from_client = server_setup();
-  return from_client;
+  int serverFifo = server_setup();
+  int * clientPP;
+  int readResult = read(serverFifo, clientPP, HANDSHAKE_BUFFER_SIZE);
+  if (readResult == -1){ printf("Server reading from WKP error\n"); exit(1);}
+  return 0;
 }
 
 
@@ -46,13 +48,16 @@ int server_handshake(int *to_client) {
   =========================*/
 int client_handshake(int *to_server) {
   // Opening PP
-  int fds[2];
-  int pipeResult = pipe(fds);
-  if (pipeResult == -1) {printf("pipeResult -1\n"); exit(1);};
+  int fifoClient = open(getpid(), O_RDWR);
+  printf("fifoClient fd: %d\n", fifoClient);
 
   // Opening WKP
-  int fifoFD = open(WKP, O_WRONLY);
-  printf("Client fifo fd: %d\n", fifoFD);
+  int fifoServer = open(WKP, O_WRONLY);
+  printf("WKP fifo fd: %d\n", fifoServer);
+
+  // Writing private pipe to WKP
+  int writeResult = write(fifoServer, getpid(), HANDSHAKE_BUFFER_SIZE);
+  if (writeResult == -1){ printf("Client writing to WKP error\n"); exit(1);}
 }
 
 
