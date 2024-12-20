@@ -13,7 +13,7 @@ int server_setup() {
   mkfifo(WKP, 0666);
 
   int fifoFD = open(WKP, O_RDONLY);
-  printf("Server fifoFD: %d\n", fifoFD);
+  printf("from_client fd: %d\n", fifoFD);
 
   remove(WKP);
   return fifoFD;
@@ -29,10 +29,19 @@ int server_setup() {
   returns the file descriptor for the upstream pipe (see server setup).
   =========================*/
 int server_handshake(int *to_client) {
-  int serverFifo = server_setup();
-  int * clientPP;
-  int readResult = read(serverFifo, clientPP, HANDSHAKE_BUFFER_SIZE);
+  int x = 0;
+  int * from_client = &x;
+  *from_client = server_setup();
+
+  char clientFifoPath[HANDSHAKE_BUFFER_SIZE + 1];
+  printf("created pathj variable\n");
+  int readResult = read(*from_client, clientFifoPath, HANDSHAKE_BUFFER_SIZE);
   if (readResult == -1){ printf("Server reading from WKP error\n"); exit(1);}
+  printf("readResult: %d\n", readResult);
+
+  *to_client = open(clientFifoPath, O_WRONLY);
+  printf("to_client fd: %d\n", *to_client);
+
   return 0;
 }
 
@@ -48,16 +57,35 @@ int server_handshake(int *to_client) {
   =========================*/
 int client_handshake(int *to_server) {
   // Opening PP
-  int fifoClient = open(getpid(), O_RDWR);
-  printf("fifoClient fd: %d\n", fifoClient);
+  int pid = getpid();
+  int * from_server;
+
+  // Making path for from_server
+  char fifoPath[HANDSHAKE_BUFFER_SIZE];
+  sprintf(fifoPath, "%d", pid);
+  mkfifo(fifoPath, 0666);
+  // for (int i = 0; i < strlen(fifoPath); i++){
+  //   printf("%c\n", fifoPath[i]);
+  // }
 
   // Opening WKP
-  int fifoServer = open(WKP, O_WRONLY);
-  printf("WKP fifo fd: %d\n", fifoServer);
+  *to_server = open(WKP, O_WRONLY);
+  printf("to_server fd: %d\n", *to_server);
+
+  // Writing SYN
+  int writeResult = write(*to_server, fifoPath, HANDSHAKE_BUFFER_SIZE);
+  if (writeResult == -1){ printf("Client writing to WKP error\n"); exit(1);}
+  printf("writeResult: %d\n", writeResult);
+
+  // Opening PP to read from server
+  *from_server = open(fifoPath, O_RDONLY);
+  printf("from_server fd: %d\n", *from_server);
+
+  remove(fifoPath);
 
   // Writing private pipe to WKP
-  int writeResult = write(fifoServer, getpid(), HANDSHAKE_BUFFER_SIZE);
-  if (writeResult == -1){ printf("Client writing to WKP error\n"); exit(1);}
+
+  return 0;
 }
 
 
