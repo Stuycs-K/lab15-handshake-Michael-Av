@@ -64,7 +64,7 @@ int x = 0;
      printf("ack doesn't match. handshake failed"); exit(1);
   }
 
-  return from_client;
+  return *from_client;
 }
 
 
@@ -123,7 +123,7 @@ int x = 0;
 
 
 
-  return from_server;
+  return *from_server;
 }
 
 
