@@ -80,7 +80,7 @@ int x = 0;
 int client_handshake(int *to_server) {
   // Opening PP
   int pid = getpid();
-int x = 0;
+  int x = 0;
   int * from_server = &x;
 
   // Making path for from_server

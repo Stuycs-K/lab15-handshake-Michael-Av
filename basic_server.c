@@ -8,9 +8,14 @@ int main() {
   from_client = server_handshake( &to_client );
 
   int number;
-  read(from_client, &number, sizeof(int));
-  printf("number received: %d\n", number);
+  int randfd = open("/dev/urandom", O_RDONLY);
+  int readResult = read(randfd, &number, sizeof(int));
+  if (readResult == -1) { printf("reading from random number failed\n"); exit(1);}
 
-  number++;
-  write(to_client, &number, sizeof(int));
+  printf("random number: %d\n", number);
+
+  while (1){
+    sleep(1);
+    write(to_client, &number, sizeof(int));
+  }
 }
