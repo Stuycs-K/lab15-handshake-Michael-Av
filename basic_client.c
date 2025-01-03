@@ -7,4 +7,7 @@ int main() {
   //printf("y u no work client\n");
 
   from_server = client_handshake( &to_server );
+
+  int number = 12;
+
 }
