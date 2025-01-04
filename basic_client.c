@@ -1,7 +1,13 @@
 #include "pipe_networking.h"
+#include <signal.h>
+static void sighandler(int signo){
+  if (signo == SIGINT){
+    exit(0);
+  }
+}
 
 int main() {
-
+  signal(SIGINT, sighandler);
   int to_server;
   int from_server;
   //printf("y u no work client\n");
