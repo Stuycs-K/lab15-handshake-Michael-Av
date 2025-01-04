@@ -13,10 +13,46 @@ int server_setup() {
   mkfifo(WKP, 0666);
 
   int fifoFD = open(WKP, O_RDONLY);
-  printf("from_client fd: %d\n", fifoFD);
+//  printf("from_client fd: %d\n", fifoFD);
 
   remove(WKP);
   return fifoFD;
+}
+
+int subserver_connect(int from_client){
+  int x = 0;
+  int *to_client = &x;
+// Reading to_client from from_client
+  char clientFifoPath[HANDSHAKE_BUFFER_SIZE + 1];
+  int readResult = read(from_client, clientFifoPath, HANDSHAKE_BUFFER_SIZE);
+  if (readResult == -1){ printf("Server reading from WKP error\n"); exit(1);}
+ // printf("readResult: %d\n", readResult);
+
+  // Opening to_client
+  *to_client = open(clientFifoPath, O_WRONLY);
+ // printf("to_client fd: %d\n", *to_client);
+
+  // Writing SYN_ACK randnum to client
+  char synack[HANDSHAKE_BUFFER_SIZE];
+  int randFd = open("/dev/random", O_RDONLY);
+  int randNum;
+  int randReadResult = read(randFd, &randNum, sizeof(int));
+  if (randReadResult == -1){ printf("uhoh:\n"); exit(1);}
+  sprintf(synack, "%d", randNum);
+  int writeResult = write(*to_client, synack, HANDSHAKE_BUFFER_SIZE);
+  if (writeResult == -1){ printf("Server writing to client error\n"); exit(1);}
+  //printf("writeResult: %d\n", writeResult);
+
+  // Reading ack from client, should be randNum + 1
+
+  readResult = read(from_client, synack, HANDSHAKE_BUFFER_SIZE);
+  if (readResult == -1){ printf("Server reading from client error\n"); exit(1);}
+  //printf("readResult: %d\n", readResult);
+  if (atoi(synack) != randNum + 1){
+     printf("ack doesn't match. handshake failed"); exit(1);
+  }
+
+  return *to_client;
 }
 
 /*=========================
@@ -38,11 +74,11 @@ int x = 0;
   char clientFifoPath[HANDSHAKE_BUFFER_SIZE + 1];
   int readResult = read(*from_client, clientFifoPath, HANDSHAKE_BUFFER_SIZE);
   if (readResult == -1){ printf("Server reading from WKP error\n"); exit(1);}
-  printf("readResult: %d\n", readResult);
+  //printf("readResult: %d\n", readResult);
 
   // Opening to_client
   *to_client = open(clientFifoPath, O_WRONLY);
-  printf("to_client fd: %d\n", *to_client);
+  //printf("to_client fd: %d\n", *to_client);
 
   // Writing SYN_ACK randnum to client
   char synack[HANDSHAKE_BUFFER_SIZE];
@@ -53,13 +89,13 @@ int x = 0;
   sprintf(synack, "%d", randNum);
   int writeResult = write(*to_client, synack, HANDSHAKE_BUFFER_SIZE);
   if (writeResult == -1){ printf("Server writing to client error\n"); exit(1);}
-  printf("writeResult: %d\n", writeResult);
+  //printf("writeResult: %d\n", writeResult);
 
   // Reading ack from client, should be randNum + 1
 
   readResult = read(*from_client, synack, HANDSHAKE_BUFFER_SIZE);
   if (readResult == -1){ printf("Server reading from client error\n"); exit(1);}
-  printf("readResult: %d\n", readResult);
+  //printf("readResult: %d\n", readResult);
   if (atoi(synack) != randNum + 1){
      printf("ack doesn't match. handshake failed"); exit(1);
   }
@@ -93,16 +129,16 @@ int client_handshake(int *to_server) {
 
   // Opening WKP
   *to_server = open(WKP, O_WRONLY);
-  printf("to_server fd: %d\n", *to_server);
+  //printf("to_server fd: %d\n", *to_server);
 
   // Writing SYN
   int writeResult = write(*to_server, fifoPath, HANDSHAKE_BUFFER_SIZE);
   if (writeResult == -1){ printf("Client writing to WKP error\n"); exit(1);}
-  printf("writeResult: %d\n", writeResult);
+  //printf("writeResult: %d\n", writeResult);
 
   // Opening PP to read from server
   *from_server = open(fifoPath, O_RDONLY);
-  printf("from_server fd: %d\n", *from_server);
+//  printf("from_server fd: %d\n", *from_server);
 
   remove(fifoPath);
 
@@ -110,7 +146,7 @@ int client_handshake(int *to_server) {
   char synack[HANDSHAKE_BUFFER_SIZE];
   int readResult = read(*from_server, synack, HANDSHAKE_BUFFER_SIZE);
   if (readResult == -1){ printf("Client reading from server error\n"); exit(1);}
-  printf("readResult: %d\n", readResult);
+  //printf("readResult: %d\n", readResult);
 
   // Writing ACK to server
   char ack[HANDSHAKE_BUFFER_SIZE];
@@ -118,7 +154,7 @@ int client_handshake(int *to_server) {
   sprintf(ack, "%d", ackToWrite);
   writeResult = write(*to_server, ack, HANDSHAKE_BUFFER_SIZE);
   if (writeResult == -1){ printf("Client writing to WKP error 2\n"); exit(1);}
-  printf("writeResult 2: %d\n", writeResult);
+  //printf("writeResult 2: %d\n", writeResult);
 
 
 
@@ -135,7 +171,3 @@ int client_handshake(int *to_server) {
 
   returns the file descriptor for the downstream pipe.
   =========================*/
-int server_connect(int from_client) {
-  int to_client  = 0;
-  return to_client;
-}

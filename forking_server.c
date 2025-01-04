@@ -15,26 +15,31 @@ int main() {
   int to_client;
   int from_client;
   //printf("y u no work server\n");
-    printf("Awaiting first client:\n");
+  printf("parent pid: %d\n", getpid());
 
   while (1){
-    from_client = server_handshake( &to_client );
+    printf("[%d] awaiting next client:\n", getpid());
+    from_client = server_setup();
+    signed int forkResult = fork();
+    if (!forkResult){
+      to_client = subserver_connect( from_client );
 
-    int number;
-    int randfd = open("/dev/urandom", O_RDONLY);
-    int readResult = read(randfd, &number, sizeof(int));
-    if (readResult == -1) { printf("reading from random number failed\n"); exit(1);}
+      int number;
+      int randfd = open("/dev/urandom", O_RDONLY);
+      int readResult = read(randfd, &number, sizeof(int));
+      if (readResult == -1) { printf("reading from random number failed\n"); exit(1);}
 
-    number %= 100;
-    printf("Sending %d to client(s)\n", number);
+      number %= 100;
+      printf("[%d] Sending %d to client(s)\n", getpid(), number);
 
-    while (1){
-      sleep(1);
-      printf("here\n");
-      int writeResult = write(to_client, &number, sizeof(int));
-      if (writeResult == -1) { printf("Client closed connection. Awaiting next client\n"); break;}
+      while (1){
+        sleep(1);
+        int writeResult = write(to_client, &number, sizeof(int));
+        if (writeResult == -1) { printf("Client closed connection."); break;}
+      }
+      close(from_client);
+      close(to_client);
+      exit(0);
     }
-    close(from_client);
-    close(to_client);
   }
 }
