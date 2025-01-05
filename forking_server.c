@@ -24,18 +24,15 @@ int main() {
     if (!forkResult){
       to_client = subserver_connect( from_client );
 
-      int number;
-      int randfd = open("/dev/urandom", O_RDONLY);
-      int readResult = read(randfd, &number, sizeof(int));
-      if (readResult == -1) { printf("reading from random number failed\n"); exit(1);}
-
-      number %= 100;
-      printf("[%d] Sending %d to client(s)\n", getpid(), number);
+      char line[BUFFER_SIZE];
 
       while (1){
+        int readResult = read(from_client, line, BUFFER_SIZE);
+        if (readResult == -1) { printf("reading from client string failed\n"); exit(1);}
+        //Do something to line
+        int writeResult = write(to_client, line, BUFFER_SIZE);
+        if (writeResult == -1) { printf("Client closed connection.\n"); break;}
         sleep(1);
-        int writeResult = write(to_client, &number, sizeof(int));
-        if (writeResult == -1) { printf("Client closed connection."); break;}
       }
       close(from_client);
       close(to_client);
